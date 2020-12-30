@@ -1,3 +1,3 @@
 # SpotifyKit
 
-A description of this package.
+A Swift wrapper for Spotify API
