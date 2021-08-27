@@ -28,4 +28,9 @@ extension SpotifyPlaylist {
         public let total: Int
     }
     
+    public struct Track: Decodable {
+        public let added_at: String
+        public let track: SpotifyTrack?
+    }
+    
 }

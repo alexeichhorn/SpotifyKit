@@ -189,6 +189,24 @@ public class SpotifyClient {
     }
     
     
+    // MARK: - Playlist
+    
+    public func getPlaylist(withID id: String, completion: @escaping Completion<SpotifyPlaylist>) {
+        getDecodable(SpotifyPlaylist.self, path: "/playlists/\(id)", query: [], completion: completion)
+    }
+    
+    public func getPlaylistTracks(forID id: String, limit: Int = 100, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyPlaylist.Track>>) {
+        getDecodable(SpotifyPagingResult<SpotifyPlaylist.Track>.self, path: "/playlists/\(id)/tracks", query: [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ], completion: completion)
+    }
+    
+    public func getPlaylistTracks(for playlist: SpotifyPlaylist, limit: Int = 100, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyPlaylist.Track>>) {
+        getPlaylistTracks(forID: playlist.id, limit: limit, offset: offset, completion: completion)
+    }
+    
+    
     // MARK: - Request Objects
     
     public enum SearchType: String {
