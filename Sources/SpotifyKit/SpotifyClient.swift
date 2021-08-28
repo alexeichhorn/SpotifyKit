@@ -49,7 +49,7 @@ public class SpotifyClient {
         return urlComponents.url!
     }
     
-    private func get(path: String, query: [URLQueryItem], completion: @escaping (Result<Data, Error>) -> Void) {
+    private func get(path: String, query: [URLQueryItem], additionalHeader: [String: String]? = nil, completion: @escaping (Result<(Data, URLResponse), Error>) -> Void) {
         
         authenticationHeader { result in
             switch result {
@@ -58,14 +58,20 @@ public class SpotifyClient {
                 var request = URLRequest(url: url)
                 request.allHTTPHeaderFields = header
                 
+                if let additionalHeader = additionalHeader {
+                    additionalHeader.forEach {
+                        request.setValue($0.value, forHTTPHeaderField: $0.key)
+                    }
+                }
+                
                 URLSession.shared.dataTask(with: request) { data, response, error in
                     if let error = error {
                         completion(.failure(error))
                         return
                     }
                     
-                    if let data = data {
-                        completion(.success(data))
+                    if let data = data, let response = response {
+                        completion(.success((data, response)))
                         return
                     }
                     
@@ -80,14 +86,49 @@ public class SpotifyClient {
         
     }
     
-    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], completion: @escaping (Result<T, Error>) -> Void) {
-        
-        get(path: path, query: query) { result in
+    private func getDecodableAndResponse<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], header: [String: String]? = nil, completion: @escaping (Result<(T, URLResponse), Error>) -> Void) {
+        get(path: path, query: query, additionalHeader: header) { result in
             switch result {
-            case .success(let data):
+            case .success(let (data, response)):
                 do {
                     let decoded = try JSONDecoder().decode(T.self, from: data)
-                    completion(.success(decoded))
+                    completion(.success((decoded, response)))
+                } catch let error {
+                    completion(.failure(error))
+                }
+            
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], completion: @escaping (Result<T, Error>) -> Void) {
+        getDecodableAndResponse(type, path: path, query: query) { result in
+            completion(result.map { $0.0 })
+        }
+    }
+    
+    /// - parameter etag: current etag which should be compared against
+    /// - parameter preventLocalCacheResponse: Makes sure result isn't returned when etags match (could occur when local cache is used) (default: true)
+    private func getDecodableAndEtag<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], etag: String? = nil, preventLocalCacheResponse: Bool = true, completion: @escaping (Result<(T?, String?), Error>) -> Void) {
+        
+        let header = etag.map { ["If-None-Match": $0] }
+        
+        get(path: path, query: query, additionalHeader: header) { result in
+            switch result {
+            case .success(let (data, response)):
+                let updatedEtag = (response as? HTTPURLResponse)?.allHeaderFields["Etag"] as? String
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+                
+                if statusCode == 304 || (preventLocalCacheResponse && statusCode == 200 && etag == updatedEtag) { // not modified
+                    completion(.success((nil, updatedEtag)))
+                    return
+                }
+                
+                do {
+                    let decoded = try JSONDecoder().decode(T.self, from: data)
+                    completion(.success((decoded, updatedEtag)))
                 } catch let error {
                     completion(.failure(error))
                 }
@@ -204,6 +245,16 @@ public class SpotifyClient {
     
     public func getPlaylistTracks(for playlist: SpotifyPlaylist, limit: Int = 100, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyPlaylist.Track>>) {
         getPlaylistTracks(forID: playlist.id, limit: limit, offset: offset, completion: completion)
+    }
+    
+    public func hasPlaylistChanged(withID id: String, etag: String?, completion: @escaping Completion<SpotifyPlaylist.VersionControl>) {
+        getDecodableAndEtag(SpotifyPlaylist.VersionControl.MinimalPlaylist.self, path: "/playlists/\(id)", query: [
+            URLQueryItem(name: "fields", value: "name,description,snapshot_id")
+        ], etag: etag) { result in
+            completion(result.map { value, etag in
+                return SpotifyPlaylist.VersionControl(id: id, etag: etag, updates: value)
+            })
+        }
     }
     
     
