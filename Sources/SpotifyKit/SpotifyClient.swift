@@ -192,6 +192,19 @@ public class SpotifyClient {
         getAlbum(withID: album.id, completion: completion)
     }
     
+    /// - parameter limit: maximum is 50 (default: 50)
+    public func getAlbumTracks(forID id: String, limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
+        getDecodable(SpotifyPagingResult<SpotifyTrack>.self, path: "/albums/\(id)/tracks", query: [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ], completion: completion)
+    }
+    
+    /// - parameter limit: maximum is 50 (default: 50)
+    public func getAlbumTracks(for album: SpotifyAlbum, limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
+        getAlbumTracks(forID: album.id, limit: limit, offset: offset, completion: completion)
+    }
+    
     
     // MARK: - Artist
     
