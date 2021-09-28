@@ -16,9 +16,9 @@ extension SpotifyPlaylist {
         
         
         public struct MinimalPlaylist: Decodable {
-            let name: String
-            let description: String
-            let snapshot_id: String
+            public let name: String
+            public let description: String
+            public let snapshot_id: String
         }
     }
     
