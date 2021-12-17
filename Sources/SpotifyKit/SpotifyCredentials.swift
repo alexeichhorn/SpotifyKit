@@ -44,6 +44,15 @@ public class SpotifyCredentials {
         }
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    func getAccessToken() async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            getAccessToken { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     private func requestAuthorization(for clientID: String, clientSecret: String) -> String {
         (clientID + ":" + clientSecret).data(using: .ascii)?.base64EncodedString() ?? ""
     }

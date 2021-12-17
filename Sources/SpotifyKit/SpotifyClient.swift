@@ -109,6 +109,15 @@ public class SpotifyClient {
         }
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem]) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            getDecodable(type, path: path, query: query) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     /// - parameter etag: current etag which should be compared against
     /// - parameter preventLocalCacheResponse: Makes sure result isn't returned when etags match (could occur when local cache is used) (default: true)
     private func getDecodableAndEtag<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], etag: String? = nil, preventLocalCacheResponse: Bool = true, completion: @escaping (Result<(T?, String?), Error>) -> Void) {
@@ -155,6 +164,15 @@ public class SpotifyClient {
         
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func search(_ query: String, limit: Int = 10, offset: Int = 0, types: [SearchType] = [.track]) async throws -> SpotifySearchResult {
+        try await withCheckedThrowingContinuation { continuation in
+            search(query, limit: limit, offset: offset, types: types) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     
     // MARK: - Track
     
@@ -162,8 +180,18 @@ public class SpotifyClient {
         getDecodable(SpotifyTrack.self, path: "/tracks/\(id)", query: [], completion: completion)
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getTrack(with id: String) async throws -> SpotifyTrack {
+        return try await getDecodable(SpotifyTrack.self, path: "/tracks/\(id)", query: [])
+    }
+    
     public func getTrackDetails(for track: SpotifyTrack, completion: @escaping Completion<SpotifyTrack>) {
         getTrack(with: track.id, completion: completion)
+    }
+    
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getTrackDetails(for track: SpotifyTrack) async throws -> SpotifyTrack {
+        return try await getTrack(with: track.id)
     }
     
     /// - parameter ids: maximum 50 ids accepted
@@ -175,9 +203,23 @@ public class SpotifyClient {
         }
     }
     
+    /// - parameter ids: maximum 50 ids accepted
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getTracks(with ids: [String]) async throws -> [SpotifyTrack] {
+        try await getDecodable(SpotifyTopTracks.self, path: "/tracks", query: [
+            URLQueryItem(name: "ids", value: ids.joined(separator: ","))
+        ]).tracks
+    }
+    
     /// - parameter tracks: maximum 50 tracks accepted
     public func getMultipleTrackDetails(for tracks: [SpotifyTrack], completion: @escaping Completion<[SpotifyTrack]>) {
         getTracks(with: tracks.map { $0.id }, completion: completion)
+    }
+    
+    /// - parameter tracks: maximum 50 tracks accepted
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getMultipleTrackDetails(for tracks: [SpotifyTrack]) async throws -> [SpotifyTrack] {
+        try await getTracks(with: tracks.map { $0.id })
     }
     
     
@@ -187,9 +229,20 @@ public class SpotifyClient {
         getDecodable(SpotifyAlbum.self, path: "/albums/\(id)", query: [], completion: completion)
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbum(withID id: String) async throws -> SpotifyAlbum {
+        return try await getDecodable(SpotifyAlbum.self, path: "/albums/\(id)", query: [])
+    }
+    
     /// load missing values
     public func getAlbumDetails(for album: SpotifyAlbum, completion: @escaping (Result<SpotifyAlbum, Error>) -> Void) {
         getAlbum(withID: album.id, completion: completion)
+    }
+    
+    /// load missing values
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbumDetails(for album: SpotifyAlbum) async throws -> SpotifyAlbum {
+        return try await getAlbumDetails(for: album)
     }
     
     /// - parameter limit: maximum is 50 (default: 50)
@@ -201,8 +254,24 @@ public class SpotifyClient {
     }
     
     /// - parameter limit: maximum is 50 (default: 50)
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbumTracks(forID id: String, limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
+        try await withCheckedThrowingContinuation { continuation in
+            getAlbumTracks(forID: id, limit: limit, offset: offset) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
+    /// - parameter limit: maximum is 50 (default: 50)
     public func getAlbumTracks(for album: SpotifyAlbum, limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
         getAlbumTracks(forID: album.id, limit: limit, offset: offset, completion: completion)
+    }
+    
+    /// - parameter limit: maximum is 50 (default: 50)
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbumTracks(for album: SpotifyAlbum, limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
+        return try await getAlbumTracks(forID: album.id, limit: limit, offset: offset)
     }
     
     
@@ -210,6 +279,11 @@ public class SpotifyClient {
     
     public func getArtist(withID id: String, completion: @escaping (Result<SpotifyArtist, Error>) -> Void) {
         getDecodable(SpotifyArtist.self, path: "/artists/\(id)", query: [], completion: completion)
+    }
+    
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getArtist(withID id: String) async throws -> SpotifyArtist {
+        return try await getDecodable(SpotifyArtist.self, path: "/artists/\(id)", query: [])
     }
     
     /// - parameter completion: returns array of **simplified** album objects
@@ -226,12 +300,28 @@ public class SpotifyClient {
         getDecodable(SpotifyPagingResult<SpotifyAlbum>.self, path: "/artists/\(artist.id)/albums", query: query, completion: completion)
     }
     
+    /// - parameter completion: returns array of **simplified** album objects
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbums(for artist: SpotifyArtist, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyAlbum> {
+        try await withCheckedThrowingContinuation { continuation in
+            getAlbums(for: artist, ofTypes: types, limit: limit, offset: offset) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     /// - parameter completion: returns array of **full** track objects
     public func getTopTracks(for artist: SpotifyArtist, completion: @escaping Completion<[SpotifyTrack]>) {
         getDecodable(SpotifyTopTracks.self, path: "/artists/\(artist.id)/top-tracks", query: []) { result in
             let tracks = result.map { $0.tracks }
             completion(tracks)
         }
+    }
+    
+    /// - parameter completion: returns array of **full** track objects
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getTopTracks(for artist: SpotifyArtist) async throws -> [SpotifyTrack] {
+        return try await getDecodable(SpotifyTopTracks.self, path: "/artists/\(artist.id)/top-tracks", query: []).tracks
     }
     
     /// - parameter completion: returns array of **full** artist objects
@@ -242,11 +332,22 @@ public class SpotifyClient {
         }
     }
     
+    /// - parameter completion: returns array of **full** artist objects
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getRelatedArtists(for artist: SpotifyArtist) async throws -> [SpotifyArtist] {
+        return try await getDecodable(SpotifyRelatedArtists.self, path: "/artists/\(artist.id)/related-artists", query: []).artists
+    }
+    
     
     // MARK: - Playlist
     
     public func getPlaylist(withID id: String, completion: @escaping Completion<SpotifyPlaylist>) {
         getDecodable(SpotifyPlaylist.self, path: "/playlists/\(id)", query: [], completion: completion)
+    }
+    
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getPlaylist(withID id: String) async throws -> SpotifyPlaylist {
+        return try await getDecodable(SpotifyPlaylist.self, path: "/playlists/\(id)", query: [])
     }
     
     public func getPlaylistTracks(forID id: String, limit: Int = 100, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyPlaylist.Track>>) {
@@ -256,8 +357,22 @@ public class SpotifyClient {
         ], completion: completion)
     }
     
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getPlaylistTracks(forID id: String, limit: Int = 100, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyPlaylist.Track> {
+        try await withCheckedThrowingContinuation { continuation in
+            getPlaylistTracks(forID: id, limit: limit, offset: offset) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     public func getPlaylistTracks(for playlist: SpotifyPlaylist, limit: Int = 100, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyPlaylist.Track>>) {
         getPlaylistTracks(forID: playlist.id, limit: limit, offset: offset, completion: completion)
+    }
+    
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getPlaylistTracks(for playlist: SpotifyPlaylist, limit: Int = 100, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyPlaylist.Track> {
+        return try await getPlaylistTracks(forID: playlist.id, limit: limit, offset: offset)
     }
     
     public func hasPlaylistChanged(withID id: String, etag: String?, completion: @escaping Completion<SpotifyPlaylist.VersionControl>) {
@@ -267,6 +382,15 @@ public class SpotifyClient {
             completion(result.map { value, etag in
                 return SpotifyPlaylist.VersionControl(id: id, etag: etag, updates: value)
             })
+        }
+    }
+    
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func hasPlaylistChanged(withID id: String, etag: String?) async throws -> SpotifyPlaylist.VersionControl {
+        try await withCheckedThrowingContinuation { continuation in
+            hasPlaylistChanged(withID: id, etag: etag) { result in
+                continuation.resume(with: result)
+            }
         }
     }
     
