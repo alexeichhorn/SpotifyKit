@@ -246,7 +246,7 @@ public class SpotifyClient {
     }
     
     /// - parameter limit: maximum is 50 (default: 50)
-    public func getAlbumTracks(forID id: String, limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
+    public func getAlbumTracks(forID id: String, @Clamped(max: 50) limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
         getDecodable(SpotifyPagingResult<SpotifyTrack>.self, path: "/albums/\(id)/tracks", query: [
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "offset", value: "\(offset)")
@@ -255,7 +255,7 @@ public class SpotifyClient {
     
     /// - parameter limit: maximum is 50 (default: 50)
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
-    public func getAlbumTracks(forID id: String, limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
+    public func getAlbumTracks(forID id: String, @Clamped(max: 50) limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
         try await withCheckedThrowingContinuation { continuation in
             getAlbumTracks(forID: id, limit: limit, offset: offset) { result in
                 continuation.resume(with: result)
@@ -264,13 +264,13 @@ public class SpotifyClient {
     }
     
     /// - parameter limit: maximum is 50 (default: 50)
-    public func getAlbumTracks(for album: SpotifyAlbum, limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
+    public func getAlbumTracks(for album: SpotifyAlbum, @Clamped(max: 50) limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
         getAlbumTracks(forID: album.id, limit: limit, offset: offset, completion: completion)
     }
     
     /// - parameter limit: maximum is 50 (default: 50)
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
-    public func getAlbumTracks(for album: SpotifyAlbum, limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
+    public func getAlbumTracks(for album: SpotifyAlbum, @Clamped(max: 50) limit: Int = 50, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyTrack> {
         return try await getAlbumTracks(forID: album.id, limit: limit, offset: offset)
     }
     
