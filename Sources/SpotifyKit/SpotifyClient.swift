@@ -196,6 +196,8 @@ public class SpotifyClient {
     
     /// - parameter ids: maximum 50 ids accepted
     public func getTracks(with ids: [String], completion: @escaping Completion<[SpotifyTrack]>) {
+        assert(ids.count <= 50, "Only 50 ids accepted")
+        
         getDecodable(SpotifyTopTracks.self, path: "/tracks", query: [
             URLQueryItem(name: "ids", value: ids.joined(separator: ","))
         ]) { result in
@@ -206,7 +208,9 @@ public class SpotifyClient {
     /// - parameter ids: maximum 50 ids accepted
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
     public func getTracks(with ids: [String]) async throws -> [SpotifyTrack] {
-        try await getDecodable(SpotifyTopTracks.self, path: "/tracks", query: [
+        assert(ids.count <= 50, "Only 50 ids accepted")
+        
+        return try await getDecodable(SpotifyTopTracks.self, path: "/tracks", query: [
             URLQueryItem(name: "ids", value: ids.joined(separator: ","))
         ]).tracks
     }
