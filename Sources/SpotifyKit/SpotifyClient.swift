@@ -249,6 +249,27 @@ public class SpotifyClient {
         return try await getAlbumDetails(for: album)
     }
     
+    /// - parameter ids: maximum 20 ids accepted
+    public func getAlbums(with ids: [String], completion: @escaping Completion<[SpotifyAlbum]>) {
+        assert(ids.count <= 20, "Only 20 ids accepted")
+        
+        getDecodable(SpotifyWrappedAlbums.self, path: "/albums", query: [
+            URLQueryItem(name: "ids", value: ids.joined(separator: ","))
+        ]) { result in
+            completion(result.map { $0.albums })
+        }
+    }
+    
+    /// - parameter ids: maximum 20 ids accepted
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbums(with ids: [String]) async throws -> [SpotifyAlbum] {
+        return try await withCheckedThrowingContinuation { continuation in
+            getAlbums(with: ids) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
     /// - parameter limit: maximum is 50 (default: 50)
     public func getAlbumTracks(forID id: String, @Clamped(max: 50) limit: Int = 50, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyTrack>>) {
         getDecodable(SpotifyPagingResult<SpotifyTrack>.self, path: "/albums/\(id)/tracks", query: [
@@ -288,6 +309,27 @@ public class SpotifyClient {
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
     public func getArtist(withID id: String) async throws -> SpotifyArtist {
         return try await getDecodable(SpotifyArtist.self, path: "/artists/\(id)", query: [])
+    }
+    
+    /// - parameter ids: maximum 50 ids accepted
+    public func getArtists(with ids: [String], completion: @escaping Completion<[SpotifyArtist]>) {
+        assert(ids.count <= 50, "Only 50 ids accepted")
+        
+        getDecodable(SpotifyWrappedArtists.self, path: "/artists", query: [
+            URLQueryItem(name: "ids", value: ids.joined(separator: ","))
+        ]) { result in
+            completion(result.map { $0.artists })
+        }
+    }
+    
+    /// - parameter ids: maximum 50 ids accepted
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getArtists(with ids: [String]) async throws -> [SpotifyArtist] {
+        return try await withCheckedThrowingContinuation { continuation in
+            getArtists(with: ids) { result in
+                continuation.resume(with: result)
+            }
+        }
     }
     
     /// - parameter completion: returns array of **simplified** album objects
@@ -413,6 +455,14 @@ public class SpotifyClient {
     
     struct SpotifyTopTracks: Decodable {
         let tracks: [SpotifyTrack]
+    }
+    
+    struct SpotifyWrappedAlbums: Decodable {
+        let albums: [SpotifyAlbum]
+    }
+    
+    struct SpotifyWrappedArtists: Decodable {
+        let artists: [SpotifyArtist]
     }
     
     struct SpotifyRelatedArtists: Decodable {
