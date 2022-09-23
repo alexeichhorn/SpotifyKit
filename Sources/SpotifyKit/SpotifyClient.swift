@@ -332,8 +332,7 @@ public class SpotifyClient {
         }
     }
     
-    /// - parameter completion: returns array of **simplified** album objects
-    public func getAlbums(for artist: SpotifyArtist, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyAlbum>>) {
+    public func getAlbums(forArtistID identifier: String, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyAlbum>>) {
         
         var query = [
             URLQueryItem(name: "limit", value: "\(limit)"),
@@ -343,10 +342,25 @@ public class SpotifyClient {
         if let encodedTypes = types?.map({ $0.rawValue }).joined(separator: ",") {
             query.append(URLQueryItem(name: "include_groups", value: encodedTypes))
         }
-        getDecodable(SpotifyPagingResult<SpotifyAlbum>.self, path: "/artists/\(artist.id)/albums", query: query, completion: completion)
+        getDecodable(SpotifyPagingResult<SpotifyAlbum>.self, path: "/artists/\(identifier)/albums", query: query, completion: completion)
+    }
+    
+    /// - returns: array of **simplified** album objects
+    @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
+    public func getAlbums(forArtistID identifier: String, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyAlbum> {
+        try await withCheckedThrowingContinuation { continuation in
+            getAlbums(forArtistID: identifier, ofTypes: types, limit: limit, offset: offset) { result in
+                continuation.resume(with: result)
+            }
+        }
     }
     
     /// - parameter completion: returns array of **simplified** album objects
+    public func getAlbums(for artist: SpotifyArtist, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0, completion: @escaping Completion<SpotifyPagingResult<SpotifyAlbum>>) {
+        getAlbums(forArtistID: artist.id, ofTypes: types, limit: limit, offset: offset, completion: completion)
+    }
+    
+    /// - returns: array of **simplified** album objects
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
     public func getAlbums(for artist: SpotifyArtist, ofTypes types: [SpotifyAlbum.AlbumType]? = nil, limit: Int = 10, offset: Int = 0) async throws -> SpotifyPagingResult<SpotifyAlbum> {
         try await withCheckedThrowingContinuation { continuation in
