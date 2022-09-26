@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SpotifyTrack: Decodable {
+public struct SpotifyTrack: Codable {
     public let id: String
     public let name: String
     public let popularity: Int?

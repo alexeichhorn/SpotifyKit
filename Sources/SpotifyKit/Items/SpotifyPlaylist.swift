@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SpotifyPlaylist: Decodable {
+public struct SpotifyPlaylist: Codable {
     public let id: String
     public let name: String
     public let owner: SpotifyPublicUser
@@ -23,12 +23,12 @@ public struct SpotifyPlaylist: Decodable {
 
 extension SpotifyPlaylist {
     
-    public struct TracksReference: Decodable {
+    public struct TracksReference: Codable {
         public let href: String
         public let total: Int
     }
     
-    public struct Track: Decodable {
+    public struct Track: Codable {
         public let added_at: String
         public let track: SpotifyTrack?
     }

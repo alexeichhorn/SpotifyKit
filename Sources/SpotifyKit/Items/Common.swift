@@ -18,21 +18,21 @@ extension SpotifyClient {
 }
 
 
-public struct SpotifyImage: Decodable {
+public struct SpotifyImage: Codable {
     public let height: Int?
     public let width: Int?
     public let url: String
 }
 
 
-public enum SpotifyExternalID: String, Decodable {
+public enum SpotifyExternalID: String, Codable {
     case isrc
     case ean
     case upc
 }
 
 
-public struct SpotifyPublicUser: Decodable {
+public struct SpotifyPublicUser: Codable {
     public let id: String
     public let display_name: String
     public let images: [SpotifyImage]?
@@ -41,6 +41,6 @@ public struct SpotifyPublicUser: Decodable {
 }
 
 
-public struct SpotifyFollowers: Decodable {
+public struct SpotifyFollowers: Codable {
     public let total: Int
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SpotifyPagingResult<Item: Decodable>: Decodable {
+public struct SpotifyPagingResult<Item: Codable>: Codable {
     public let items: [Item]
     public let limit: Int
     public let offset: Int
