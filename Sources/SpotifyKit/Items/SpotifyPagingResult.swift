@@ -13,3 +13,5 @@ public struct SpotifyPagingResult<Item: Codable>: Codable {
     public let offset: Int
     public let total: Int
 }
+
+extension SpotifyPagingResult: Sendable where Item: Sendable {}

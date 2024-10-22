@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SpotifyAlbum: Codable {
+public struct SpotifyAlbum: Codable, Sendable {
     public let id: String
     public let name: String
     public let album_type: AlbumType
@@ -27,7 +27,7 @@ public struct SpotifyAlbum: Codable {
 
 extension SpotifyAlbum {
     
-    public enum AlbumType: String, Codable {
+    public enum AlbumType: String, Codable, Sendable {
         case album
         case single
         case compilation

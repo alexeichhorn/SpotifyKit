@@ -9,7 +9,7 @@ import Foundation
 
 extension SpotifyClient {
     
-    public enum Market: String {
+    public enum Market: String, Sendable {
         case ch
         case de
         case us
@@ -18,21 +18,21 @@ extension SpotifyClient {
 }
 
 
-public struct SpotifyImage: Codable {
+public struct SpotifyImage: Codable, Sendable {
     public let height: Int?
     public let width: Int?
     public let url: String
 }
 
 
-public enum SpotifyExternalID: String, Codable {
+public enum SpotifyExternalID: String, Codable, Sendable {
     case isrc
     case ean
     case upc
 }
 
 
-public struct SpotifyPublicUser: Codable {
+public struct SpotifyPublicUser: Codable, Sendable {
     public let id: String
     public let display_name: String
     public let images: [SpotifyImage]?
@@ -41,6 +41,6 @@ public struct SpotifyPublicUser: Codable {
 }
 
 
-public struct SpotifyFollowers: Codable {
+public struct SpotifyFollowers: Codable, Sendable {
     public let total: Int
 }

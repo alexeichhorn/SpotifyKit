@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class SpotifyCredentials {
+public actor SpotifyCredentials {
     let source: Source
     
     public typealias AccessTokenDelegateHandler = (@escaping (Result<(String, Int), Error>) -> Void) -> Void
@@ -36,7 +36,7 @@ public class SpotifyCredentials {
         case unknown
     }
     
-    func getAccessToken(completion: @escaping (Result<String, Error>) -> Void) {
+    func getAccessToken(completion: @escaping @Sendable (Result<String, Error>) -> Void) {
         if let accessToken = accessToken {
             completion(.success(accessToken))
         } else {
@@ -57,7 +57,7 @@ public class SpotifyCredentials {
         (clientID + ":" + clientSecret).data(using: .ascii)?.base64EncodedString() ?? ""
     }
     
-    private func requestAccessToken(completion: @escaping (Result<String, Error>) -> Void) {
+    private func requestAccessToken(completion: @escaping @Sendable (Result<String, Error>) -> Void) {
         
         switch source {
         case .delegate(let handler):
@@ -91,12 +91,18 @@ public class SpotifyCredentials {
                         return
                 }
                 
-                self.accessToken = response.access_token
-                completion(.success(response.access_token))
+                Task {
+                    await self.setAccessToken(response.access_token)
+                    completion(.success(response.access_token))
+                }
                 
             }.resume()
         }
         
+    }
+    
+    private func setAccessToken(_ accessToken: String) {
+        self.accessToken = accessToken
     }
     
     // MARK: - Request Objects

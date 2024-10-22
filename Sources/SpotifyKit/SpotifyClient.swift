@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class SpotifyClient {
+public actor SpotifyClient {
     
     let credentials: SpotifyCredentials
     
@@ -23,18 +23,25 @@ public class SpotifyClient {
         case unknown
     }
     
-    public typealias Completion<T> = (Result<T, Error>) -> Void
+    public typealias Completion<T> = @Sendable (Result<T, Error>) -> Void
     
-    private func authenticationHeader(completion: @escaping (Result<[String: String], Error>) -> Void) {
-        credentials.getAccessToken { result in
-            switch result {
-            case .success(let accessToken):
+    private func authenticationHeader(completion: @escaping @Sendable (Result<[String: String], Error>) -> Void) {
+        Task {
+            do {
+                let accessToken = try await credentials.getAccessToken()
                 completion(.success(["Authorization": "Bearer \(accessToken)"]))
-            case .failure(let error):
+            } catch let error {
                 completion(.failure(error))
             }
         }
-        
+    }
+    
+    private func getAuthenticationHeader() async throws -> [String: String] {
+        return try await withCheckedThrowingContinuation { continuation in
+            authenticationHeader { result in
+                continuation.resume(with: result)
+            }
+        }
     }
     
     private func url(forPath path: String, query: [URLQueryItem]) -> URL {
@@ -49,11 +56,12 @@ public class SpotifyClient {
         return urlComponents.url!
     }
     
-    private func get(path: String, query: [URLQueryItem], additionalHeader: [String: String]? = nil, completion: @escaping (Result<(Data, URLResponse), Error>) -> Void) {
+    private func get(path: String, query: [URLQueryItem], additionalHeader: [String: String]? = nil, completion: @escaping @Sendable (Result<(Data, URLResponse), Error>) -> Void) {
         
-        authenticationHeader { result in
-            switch result {
-            case .success(let header):
+        Task {
+            do {
+                let header = try await getAuthenticationHeader()
+                
                 let url = self.url(forPath: path, query: query)
                 var request = URLRequest(url: url)
                 request.allHTTPHeaderFields = header
@@ -79,14 +87,13 @@ public class SpotifyClient {
                     
                 }.resume()
                 
-            case .failure(let error):
+            } catch let error {
                 completion(.failure(error))
             }
         }
-        
     }
     
-    private func getDecodableAndResponse<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], header: [String: String]? = nil, completion: @escaping (Result<(T, URLResponse), Error>) -> Void) {
+    private func getDecodableAndResponse<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], header: [String: String]? = nil, completion: @escaping @Sendable (Result<(T, URLResponse), Error>) -> Void) {
         get(path: path, query: query, additionalHeader: header) { result in
             switch result {
             case .success(let (data, response)):
@@ -103,14 +110,14 @@ public class SpotifyClient {
         }
     }
     
-    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], completion: @escaping (Result<T, Error>) -> Void) {
+    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], completion: @escaping @Sendable (Result<T, Error>) -> Void) {
         getDecodableAndResponse(type, path: path, query: query) { result in
             completion(result.map { $0.0 })
         }
     }
     
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
-    private func getDecodable<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem]) async throws -> T {
+    private func getDecodable<T: Decodable & Sendable>(_ type: T.Type, path: String, query: [URLQueryItem]) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             getDecodable(type, path: path, query: query) { result in
                 continuation.resume(with: result)
@@ -120,7 +127,7 @@ public class SpotifyClient {
     
     /// - parameter etag: current etag which should be compared against
     /// - parameter preventLocalCacheResponse: Makes sure result isn't returned when etags match (could occur when local cache is used) (default: true)
-    private func getDecodableAndEtag<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], etag: String? = nil, preventLocalCacheResponse: Bool = true, completion: @escaping (Result<(T?, String?), Error>) -> Void) {
+    private func getDecodableAndEtag<T: Decodable>(_ type: T.Type, path: String, query: [URLQueryItem], etag: String? = nil, preventLocalCacheResponse: Bool = true, completion: @escaping @Sendable (Result<(T?, String?), Error>) -> Void) {
         
         let header = etag.map { ["If-None-Match": $0] }
         
@@ -151,7 +158,7 @@ public class SpotifyClient {
     
     // MARK: - Search
     
-    public func search(_ query: String, limit: Int = 10, offset: Int = 0, types: [SearchType] = [.track], completion: @escaping (Result<SpotifySearchResult, Error>) -> Void) {
+    public func search(_ query: String, limit: Int = 10, offset: Int = 0, types: [SearchType] = [.track], completion: @escaping @Sendable (Result<SpotifySearchResult, Error>) -> Void) {
         
         let encodedType = types.map { $0.rawValue }.joined(separator: ",")
         
@@ -176,7 +183,7 @@ public class SpotifyClient {
     
     // MARK: - Track
     
-    public func getTrack(with id: String, completion: @escaping Completion<SpotifyTrack>) {
+    public func getTrack(with id: String, completion: @escaping @Sendable Completion<SpotifyTrack>) {
         getDecodable(SpotifyTrack.self, path: "/tracks/\(id)", query: [], completion: completion)
     }
     
@@ -195,7 +202,7 @@ public class SpotifyClient {
     }
     
     /// - parameter ids: maximum 50 ids accepted
-    public func getTracks(with ids: [String], completion: @escaping Completion<[SpotifyTrack]>) {
+    public func getTracks(with ids: [String], completion: @escaping @Sendable Completion<[SpotifyTrack]>) {
         assert(ids.count <= 50, "Only 50 ids accepted")
         
         getDecodable(SpotifyTopTracks.self, path: "/tracks", query: [
@@ -229,7 +236,7 @@ public class SpotifyClient {
     
     // MARK: - Album
     
-    public func getAlbum(withID id: String, completion: @escaping (Result<SpotifyAlbum, Error>) -> Void) {
+    public func getAlbum(withID id: String, completion: @escaping @Sendable (Result<SpotifyAlbum, Error>) -> Void) {
         getDecodable(SpotifyAlbum.self, path: "/albums/\(id)", query: [], completion: completion)
     }
     
@@ -239,14 +246,14 @@ public class SpotifyClient {
     }
     
     /// load missing values
-    public func getAlbumDetails(for album: SpotifyAlbum, completion: @escaping (Result<SpotifyAlbum, Error>) -> Void) {
+    public func getAlbumDetails(for album: SpotifyAlbum, completion: @escaping @Sendable (Result<SpotifyAlbum, Error>) -> Void) {
         getAlbum(withID: album.id, completion: completion)
     }
     
     /// load missing values
     @available(iOS 13.0, watchOS 6.0, tvOS 13.0, macOS 10.15, *)
     public func getAlbumDetails(for album: SpotifyAlbum) async throws -> SpotifyAlbum {
-        return try await getAlbumDetails(for: album)
+        return try await getAlbum(withID: album.id)
     }
     
     /// - parameter ids: maximum 20 ids accepted
@@ -302,7 +309,7 @@ public class SpotifyClient {
     
     // MARK: - Artist
     
-    public func getArtist(withID id: String, completion: @escaping (Result<SpotifyArtist, Error>) -> Void) {
+    public func getArtist(withID id: String, completion: @escaping @Sendable (Result<SpotifyArtist, Error>) -> Void) {
         getDecodable(SpotifyArtist.self, path: "/artists/\(id)", query: [], completion: completion)
     }
     
