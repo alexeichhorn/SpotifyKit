@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  SpotifyCredentials.swift
+//  SpotifyKit
 //
 //  Created by Alexander Eichhorn on 25.04.20.
 //
@@ -10,7 +10,7 @@ import Foundation
 public actor SpotifyCredentials {
     let source: Source
     
-    public typealias AccessTokenDelegateHandler = (@escaping (Result<(String, Int), Error>) -> Void) -> Void
+    public typealias AccessTokenDelegateHandler = (@escaping @Sendable (Result<(String, Int), Error>) -> Void) -> Void
     
     enum Source {
         case client(clientID: String, clientSecret: String)
@@ -62,10 +62,16 @@ public actor SpotifyCredentials {
         switch source {
         case .delegate(let handler):
             handler { result in
-                completion(result.map { token, expiresIn in
-                    self._accessToken.set(token, duration: TimeInterval(expiresIn))
-                    return token
-                })
+                Task {
+                    switch result {
+                    case .success(let (token, expiresIn)):
+                        await self.setAccessToken(token, duration: TimeInterval(expiresIn))
+                        completion(.success(token))
+                        
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
             }
             
         case .client(let clientID, let clientSecret):
@@ -99,6 +105,10 @@ public actor SpotifyCredentials {
             }.resume()
         }
         
+    }
+    
+    private func setAccessToken(_ token: String, duration: TimeInterval) {
+        self._accessToken.set(token, duration: duration)
     }
     
     private func setAccessToken(_ accessToken: String) {
