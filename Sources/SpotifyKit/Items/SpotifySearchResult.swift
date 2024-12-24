@@ -11,5 +11,5 @@ public struct SpotifySearchResult: Decodable, Sendable {
     public let tracks: SpotifyPagingResult<SpotifyTrack>?
     public let albums: SpotifyPagingResult<SpotifyAlbum>?
     public let artists: SpotifyPagingResult<SpotifyArtist>?
-    public let playlists: SpotifyPagingResult<SpotifyPlaylist>?
+    public let playlists: SpotifyPagingResult<SpotifyPlaylist?>?
 }
